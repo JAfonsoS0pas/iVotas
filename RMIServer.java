@@ -7,79 +7,88 @@ import java.io.*;
 
 
 public class RMIServer extends UnicastRemoteObject implements RMI {
+    public static RMIServer rmi;
+    public static int portRMI = 1099;
+    public static String name = "SD";
+    BufferedReader bf = null;
+
     public RMIServer() throws RemoteException {
         super();
-    }
-
-    public void initRMIServer() throws RemoteException {
-        int port = 1099;
-        String name = "SD";
-
         //Reanding RMI file
-        try{
-            InputStreamReader input = new InputStreamReader(System.in);
-            BufferedReader bf = new BufferedReader(input);
+        try {
+            InputStreamReader input = new InputStreamReader(getClass().getResourceAsStream("rmiFile.txt"));
+            bf = new BufferedReader(input);
 
-            port = Integer.parseInt(bf.readLine());
+            portRMI = Integer.parseInt(bf.readLine());
             name = bf.readLine();
-            bf.close();
 
-        } catch(Exception e) {
+            //bf.close();
+        } catch (Exception e) {
             System.out.println("Exception!");
             System.exit(1);
         }
+    }
 
-
-
+    public static void initRMIServer() throws RemoteException {
         //Starting RMI Server (Main)
-        try{
-            RMIServer rmi = new RMIServer();
-            Registry r = LocateRegistry.createRegistry(port);
+        try {
+            System.out.println("serafim");
+            rmi = new RMIServer();
+            Registry r = LocateRegistry.createRegistry(portRMI);
             r.rebind(name, rmi);
+            System.out.println("Serafim 2");
             System.out.println("RMI Server ready!!");
 
             rmi.mainUDPConnect();
-        } catch (ExportException ee) {
-            System.out.println("Exception : " + ee);
 
-            try{
-                new RMIServer().backupConnect();
-                System.out.println("Backup Server Running");
-            }catch(RemoteException re){
-                System.out.println("RemoteException: " + re.getMessage());
+        } catch (Exception e) {
+            boolean flag = false;
+            while(flag = false){
+                try{
+                    rmi = new RMIServer();
+                    Registry r = LocateRegistry.createRegistry(portRMI);
+                    r.rebind(name, rmi);
+                    System.out.println("RMI Server 2 ready!!");
+                    flag = true;
+                } catch(Exception e2){
+                    System.out.println("Vou mudar, bye!!");
+                }
             }
-
-        } catch (RemoteException re){
-            System.out.println("RemoteException: " + re);
+        }
+        try {
+            new RMIServer().backupConnect();
+            System.out.println("Backup Server Running");
+        } catch (RemoteException re) {
+            System.out.println("RemoteException: " + re.getMessage());
         }
 
     }
 
-
-    //UDP server
-        public void mainUDPConnect() throws RemoteException {
+        //UDP server
+        public void mainUDPConnect() {
             //Criar a thread
             Thread mainUDPConnect = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     DatagramSocket aSocket = null;
                     String req;
-                    String msg = "Mensagem_1";
+                    String msg = "Pong";
                     try{
                         aSocket = new DatagramSocket(6789);
                         System.out.println("Socket datagram listening on port 6789");
                         while(true){
                             byte[] buffer = new byte[1024];
 
-                            //Receive resquest - Mensagem_2
+                            //Receive resquest - Ping
                             DatagramPacket request = new DatagramPacket(buffer, buffer.length);
                             aSocket.receive(request);
                             req = new String(request.getData(), 0, request.getLength());
                             System.out.println("Received from backup RMI server: " + req);
 
-                            //Sending reply - Mensagem_1
+                            //Sending reply - Pong
                             DatagramPacket reply = new DatagramPacket(request.getData(), request.getLength(), request.getAddress(), request.getPort());
                             aSocket.send(reply);
+                            System.out.println("Sending message from mainUDPConnection: ");
 
                             try{
                                 Thread.sleep(1000);
@@ -101,15 +110,14 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         }
 
         //UDP client
-        public void backupConnect() throws RemoteException {
+        public void backupConnect() {
 
             Thread backupConnect = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     String r;
                     DatagramSocket backupSocket = null;
-
-                    String msg = "Mensagem_2";
+                    String msg = "Ping";
 
                     try {
                         backupSocket = new DatagramSocket();
@@ -120,11 +128,12 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                             InetAddress host = InetAddress.getByName("localhost");
                             int sendPort = 6789;
 
-                            //Sending - Mensagem_2
+                            //Sending - Pong
                             DatagramPacket request = new DatagramPacket(buffer, buffer.length, host, sendPort);
                             backupSocket.send(request);
+                            System.out.println("Sending message from backupConnection: ");
 
-                            //Receiving - Mensagem_1
+                            //Receiving - Ping
                             byte[] replyBuffer = new byte[1024];
                             DatagramPacket reply = new DatagramPacket(replyBuffer, replyBuffer.length);
                             backupSocket.receive(reply);
@@ -153,10 +162,12 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         }
 
 
-    public static void main(String args[]) {
+    public static void main(String args[]) throws NumberFormatException, IOException, ClassNotFoundException {
 
         //System.getProperties().put("java.security.policy", "policy.all");
         //System.setSecurityManager(new RMISecurityManager());
+
+        initRMIServer();
 
 
 

@@ -14,7 +14,7 @@ public class TCPConnection {
                 Socket clientSocket = listenSocket.accept();
                 System.out.println("Client SOcket (accpeted)="+clientSocket);
                 numero++;
-                new TCPConnection(clientSocket, numero);
+                new Connection(clientSocket, numero);
             }
         }catch(IOException e) {
             System.out.println("Listen:" + e.getMessage());
@@ -25,7 +25,7 @@ public class TCPConnection {
 
 
 
-class TCPConnection extends Thread{
+class Connection extends Thread{
         DataInputStream dis;
         DataOutputStream dos;
         Socket clientSocket;
