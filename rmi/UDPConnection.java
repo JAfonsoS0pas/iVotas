@@ -5,10 +5,8 @@ import java.net.*;
 
 public class UDPConnection extends Thread{
     int server;
-    String hostName;
 
-    public UDPConnection(String hostName, int server) {
-        this.hostName = hostName;
+    public UDPConnection(int server) {
         this.server = server;
     }
 
