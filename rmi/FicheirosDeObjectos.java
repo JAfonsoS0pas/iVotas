@@ -4,7 +4,8 @@ import java.io.*;
 /** Objetos desta classe permitem lêr e escrever em ficheiros de objeto.
  *
  * @author João Afonso Póvoa Marques
- * @author Yevgen Zhydkykh
+ * @author Rita Miguel
+ * @author Catarina Gonçalves
  */
 class FicheirosDeObjeto {
     ObjectInputStream inputStream;
