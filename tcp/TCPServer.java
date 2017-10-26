@@ -117,9 +117,9 @@ class Connection extends Thread {
                 String dataParts [];
                 dataParts=data.split(" ");
                 if(dataParts[0]=="login"){
-                    if(rmi.autenticação(dataParts[1],dataParts[2])==true){
+                    if(rmi.autenticação(Integer.parseInt(dataParts[1]),dataParts[2])==true){
                         resposta="autenticacao correcta";
-                        cc=dataParts[1];
+                        cc=Integer.parseInt(dataParts[1]);
                         aux=verificaEleitor(dataParts[2]);
                         listas="type|item_list;item_count|"+aux.getListasCandidatas().size()+";";
                         for(i=0;i<aux.getListasCandidatas().size();i++){
@@ -134,10 +134,10 @@ class Connection extends Thread {
 
                 }
                 else if(dataParts[0]=="vote"){
-                    if(dataParts.length()==3){
+                    if(dataParts.size()==3){
                         rmi.inserirVotos(cc,dataParts[1],dataParts[2])
                     }
-                    else if(dataParts.length()==2){
+                    else if(dataParts.size()==2){
                         rmi.inserirVotos(cc,dataParts[1],null);
                     }
                 }
