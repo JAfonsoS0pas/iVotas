@@ -1,7 +1,3 @@
-package tcp;
-
-import rmi.*;
-
 import java.net.*;
 import java.io.*;
 import java.rmi.NotBoundException;
@@ -11,31 +7,28 @@ import java.util.*;
 
 class TCPServer{
     private static String host="localhost";
-    private static int serverPort = 12345;
+    private static int serverPort = 6000;
     private static int rmiPort = 1099;
     private static String rmiName = "rmi";
-    static TCP service_tcp = null;
-    private static RMI rmiServer = null;
+    int id;
+
 
 
     public static void main(String args[]){
         int number=0; //numero de clientes ligados a este servidor
         User users=new User();
+        id=getMesaID();
 
         try{
-            //TCP tcpServer = (TCP)  LocateRegistry.getRegistry(host, rmiPort).lookup(rmiName);
-            System.out.println(rmiName);
-            System.out.println(rmiPort);
-            rmiServer = (RMI) LocateRegistry.getRegistry(rmiPort).lookup(rmiName);
+            /*RMI rmiServer = (RMI) LocateRegistry.getRegistry(rmiPort).lookup(rmiName);*/
+            id=getIDMesa();
+            this.rmiPort=rmiPort+id
             System.out.println("A escura no porto"+serverPort);
             ServerSocket listenSocket = new ServerSocket(serverPort);
             new Manager(users);
-            System.out.println("fora");
             while(true) {
                 Socket clientSocket = listenSocket.accept(); // BLOQUEANTE
-                System.out.println("1");
                 users.addUser(clientSocket);
-                System.out.println("2");
                 System.out.println("CLIENT_SOCKET (created at accept())=" + clientSocket);
                 number++;
 
@@ -44,8 +37,9 @@ class TCPServer{
         }
         catch(IOException e) {
             System.out.println("Listen:" + e.getMessage());
-        }catch(NotBoundException e) { //execao para rmi
-            System.out.println("RMI:" + e);
+        }catch (SocketTimeoutException e) {
+        catch(NotBoundException e) { //execao para rmi
+            System.out.println("RMI:" + e.getMessage());
         }
     }
 
@@ -68,6 +62,7 @@ class Manager extends Thread{
             //identifica o votante
             System.out.print("ID do votante: ");
             id=input.nextInt();
+            verificaEleitor(id);
             //liberta mesa de voto
             System.out.print("Terminal a desbloquear:");
             numeroTerminal=input.nextInt();
@@ -94,16 +89,21 @@ class Connection extends Thread {
             clientSocket = aClientSocket;
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             out = new PrintWriter(clientSocket.getOutputStream(), true);
+            clientSocket.setSoTimeout(60000);
             this.start();
         } catch (IOException e) {
-            System.out.println("tcp.Connection:" + e.getMessage());
+            System.out.println("Connection:" + e.getMessage());
         }
     }
 
     public void run(){
-        String autenticação;
         String data;
+        int i;
+        int cc=0;
         Info no=null;
+        String resposta=null;
+        String listas=null;
+        arrayList<Eleitor> aux;
 
         for(Info node : users.userList){
             if(node.userSocket==clientSocket){
@@ -112,47 +112,47 @@ class Connection extends Thread {
             }
         }
         try{
-            if(no.getId()!=0){
-                System.out.println("id= "+ no.getId());
-            }
-
             data = in.readLine();
             if(no.getPermition()){
                 String dataParts [];
-                String partedT[];
-                String partedP[];
-                //alterar spilt
-                dataParts=data.split(";");
-                partedT=dataParts[0].split("//");
-                partedP=dataParts[1].split("//");
-
-                if(partedT[0].equals("type")){
-                    if(partedT[1].equals("login")){
-                        if(partedP[0].equals("password")){
-                            String pass;
-                            pass=partedP[1];
+                dataParts=data.split(" ");
+                if(dataParts[0]=="login"){
+                    if(rmi.autenticação(dataParts[1],dataParts[2])==true){
+                        resposta="autenticacao correcta";
+                        cc=dataParts[1];
+                        aux=verificaEleitor(dataParts[2]);
+                        listas="type|item_list;item_count|"+aux.getListasCandidatas().size()+";";
+                        for(i=0;i<aux.getListasCandidatas().size();i++){
+                            listas+="item_"+i+"_name"+aux.getListasCandidatas().get(i).getNome();
                         }
-                        /*if (autenticação == true) { ciar autenticação
-
-                            //RMI PARA VALIDAR
-                            resposta = "trotas";
-
-                            ///
-                        } else {
-                            resposta = "Autenticacao incorrecta";
-                        }*/
+                        out.println(resposta);
+                    }
+                    else{
+                        resposta="Username ou Password erradas";
+                        out.println(resposta);
                     }
 
                 }
+                else if(dataParts[0]=="vote"){
+                    if(dataParts.length()==3){
+                        rmi.inserirVotos(cc,dataParts[1],dataParts[2])
+                    }
+                    else if(dataParts.length()==2){
+                        rmi.inserirVotos(cc,dataParts[1],null);
+                    }
+                }
+                else{
+                    out.println("Operacao inexistente");
+                }
             }
+        } catch(SocketTimeoutException e){
+            no=null;
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
-
-
 }
+
 class User{
     protected List<Info> userList = new ArrayList<Info>();
 

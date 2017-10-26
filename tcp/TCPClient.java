@@ -1,11 +1,9 @@
-package tcp;
-
 import java.io.*;
 import java.net.*;
 import java.util.*;
 
 /**
- * This class establishes a tcp connection to a specified server, and loops
+ * This class establishes a TCP connection to a specified server, and loops
  * sending/receiving strings to/from the server.
  * <p>
  * The main() method receives two arguments specifying the server address and
@@ -21,16 +19,19 @@ import java.util.*;
  */
 class TCPClient {
   public static void main(String[] args) {
+    Scanner sc = new Scanner(System.in);
+    int porto;
+    int host;
     Socket socket;
     PrintWriter outToServer;
     BufferedReader inFromServer = null;
+    System.out.println("host a ligar:");
+    host=sc.nextLine();
+    System.out.println("porto a ligar:");
+    porto=sc.nextInt();
     try {
       // connect to the specified address:port (default is localhost:12345)
-      if(args.length == 2)
-        socket = new Socket(args[0], Integer.parseInt(args[1]));
-      else
-        socket = new Socket("localhost", 12345);
-        
+      socket = new Socket(host, porto);
       // create streams for writing to and reading from the socket
       inFromServer = new BufferedReader(new InputStreamReader(socket.getInputStream()));
       outToServer = new PrintWriter(socket.getOutputStream(), true);
@@ -52,7 +53,7 @@ class TCPClient {
         System.out.println(messageFromServer);
     } catch (IOException e) {
       if(inFromServer == null)
-        System.out.println("\nUsage: java tcp.TCPClient <host> <port>\n");
+        System.out.println("\nUsage: java TCPClient <host> <port>\n");
       System.out.println(e.getMessage());
     } finally {
       try { inFromServer.close(); } catch (Exception e) {}
