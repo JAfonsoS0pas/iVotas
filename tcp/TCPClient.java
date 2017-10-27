@@ -21,7 +21,7 @@ class TCPClient {
   public static void main(String[] args) {
     Scanner sc = new Scanner(System.in);
     int porto;
-    int host;
+    String host;
     Socket socket;
     PrintWriter outToServer;
     BufferedReader inFromServer = null;

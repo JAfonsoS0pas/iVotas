@@ -1,6 +1,8 @@
 package rmi;
 
-import java.net.ServerSocket;
+import com.sun.org.apache.regexp.internal.RE;
+
+import java.net.*;
 import java.rmi.*;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -18,14 +20,14 @@ import java.util.Scanner;
 
 
 public class RMIServer extends UnicastRemoteObject implements RMI {
-    public static RMIServer rmi;
-    public static int portRMI=1099;
+    public static int portRMI = 1099;
     public static int portTCP = 6000;
+    public static int portUDP_principal = 7000;
+    public static int portUDP_second = 6789;
     public static String name = "rmi";
     BufferedReader bf = null;
     private static Registry reg_rmi = null;
     public FicheirosDeObjeto file=new FicheirosDeObjeto();
-
 
     //ArrayLists
     public ArrayList<Departamento> departamentos;
@@ -35,13 +37,19 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
     public ArrayList<Lista>listas; //Listas de candidatura
 
     public RMIServer() throws RemoteException {
-        super();
+
         //Reanding RMI file
         try {
             File myFile = new File("rmiFile.txt");
             System.out.println("Attempting to read from file in: "+myFile.getCanonicalPath());
             FileReader inputFile = new FileReader(myFile);
             BufferedReader bf = new BufferedReader(inputFile);
+
+            reg_rmi = LocateRegistry.createRegistry(portRMI);
+            reg_rmi.rebind(name, this);
+            //Ligação UDP
+            UDPConnection pinger = new UDPConnection(portUDP_principal);
+            pinger.start();
 
             Scanner scanner = new Scanner(myFile);
             while(scanner.hasNextInt()){
@@ -51,47 +59,45 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
             name = scanner.next();
             System.out.println(name);
 
-        } catch (Exception e) {
+        } catch (ExportException e){
+            boolean check=false;
+            while(!check){
+                System.out.println("entrei");
+                UDPConnection pinga = new UDPConnection(portUDP_second);
+                pinga.start();
+                System.out.println("merda");
+                check=true;
+            }
+        } catch (RemoteException re){
+        }catch (Exception e) {
             System.out.println(e);
         }
     }
 
-    public static void primaryRMIServer(int portRMI) throws InterruptedException, RemoteException, ClassNotFoundException {
-        ServerSocket listenSocket = null;
-        RMI rmi = new RMIServer();
-        try {
-            reg_rmi = LocateRegistry.createRegistry(portRMI);
-            reg_rmi.rebind(name, rmi);
-        }  catch (ExportException e){
-            reg_rmi = LocateRegistry.getRegistry(portRMI);
-        }
-    }
-
-    //Failover
     /*Se o RMI primário falhar vai manter o RMI Secundário
-    Verifica se o registo do RMI primário ainda existe. Caso deixe de existir substitui o anterior
-    */
-    private static void connectBackupRMI(int portRMI) throws  RemoteException, InterruptedException {
-        System.out.println("Backup RMI is ready!!");
-        boolean flag = false;
+    Verifica se o registo do RMI primário ainda existe. Caso deixe de existir vai criar e substituir o anterior
+    Está de 3 em 3 seg a tentar conectar-se*/
+    /*
+    private static void connectBackupRMI() throws  RemoteException, InterruptedException{
+        RMIServer rmi = new RMIServer();
+        boolean flag= false;
         while(!flag){
-            try{
-                RMI rmi_aux = new RMIServer();
+            try {
+                reg_rmi = LocateRegistry.createRegistry(portRMI);
+                reg_rmi.rebind(name, rmi);
                 //Ligação UDP
-                UDPConnection pinger = new UDPConnection(portRMI);
+                UDPConnection pinger = new UDPConnection(portUDP_second);
                 pinger.start();
+                flag=true;
+            } catch (AccessException e) {
+                e.printStackTrace();
+            } catch (RemoteException e) {
                 Thread.sleep(3000);
-            } catch(InterruptedException e) {
-                flag = true;
             }
         }
-        System.out.println("Primário!!!!");
-        try {
-            primaryRMIServer(portRMI);
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
     }
+    */
+
 
     public void TCPConnection(String s_rmi, Registry reg_1, RMI rmi) throws RemoteException, InterruptedException{
         boolean flag = false;
@@ -121,8 +127,44 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         return 0;
     }
 
+    public void save() throws IOException {
+        file.abrirEscrita("users.dat");
+        try{
+            file.escreverObjeto(users);
+        }catch(IOException e) {
+            System.out.println("Ocorreu um erro do tipo "+e);
+        }
+        //System.out.println("Foi inserido");
+        file.fecharEscrita();
+
+        file.abrirEscrita("listas.dat");
+        try{
+            file.escreverObjeto(listas);
+        }catch(IOException e) {
+            System.out.println("Ocorreu um erro do tipo "+e);
+        }
+        file.fecharEscrita();
+
+        file.abrirEscrita("eleicoes.dat");
+        try{
+            file.escreverObjeto(eleicoes);
+        }catch(IOException e) {
+            System.out.println("Ocorreu um erro do tipo "+e);
+        }
+        file.fecharEscrita();
+
+        file.abrirEscrita("universidades.dat");
+        try{
+            file.escreverObjeto(universidades);
+        }catch(IOException e) {
+            System.out.println("Ocorreu um erro do tipo "+e);
+        }
+
+        file.fecharEscrita();
+    }
+
     //Mudar data
-    public void registarPessoa() throws ParseException {
+    public void registarPessoa() {
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
         int telefone, cc,profissao;
         String password, dep,morada;
@@ -133,7 +175,12 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         cc=sc.nextInt();
         System.out.println("Validade do CC");
         String validade=sc.next();
-        Date validadeCC = sdf.parse(validade);
+        Date validadeCC = null;
+        try {
+            validadeCC = sdf.parse(validade);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
         System.out.println("Password: \n");
         password=sc.next();
         System.out.println("Departamento: \n");
@@ -151,6 +198,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 departamentos.get(i).pessoas.add(user);
             }
         }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     //Função para listar todas as pessoas
@@ -160,7 +212,7 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         }
     }
 
-    public void alterarDadosPessoais() throws ParseException{
+    public void alterarDadosPessoais(){
         Scanner sc=new Scanner(System.in);
         User user=new User();
         int opcao,ccU;
@@ -199,7 +251,12 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 String validade;
                 System.out.println("Validade do CC(dd/mm/aaaa):\n");
                 validade=sc.next();
-                Date validadeCC = sdf.parse(validade);
+                Date validadeCC = null;
+                try {
+                    validadeCC = sdf.parse(validade);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
                 user.validadeCC=validadeCC;
                 break;
             case 5:
@@ -227,6 +284,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
             default:
                 break;
         }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void criarUni() {
@@ -240,6 +302,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         }
         else{
             universidades.add(uni);
+        }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -260,6 +327,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 univ.departamentos.add(depart);
                 departamentos.add(depart);
             }
+        }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -344,6 +416,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 }
             }
         }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void removerDep(){
@@ -361,6 +438,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                     }
                 }
             }
+        }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -423,6 +505,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         } else {
             Eleicao eleicao = new Eleicao(tipo, data, data_f, titulo, descricao);
             eleicoes.add(eleicao);
+        }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -554,6 +641,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
             default:
                 break;
         }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     //Função para listar todas as mesas de voto
@@ -616,6 +708,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 }
             }
         }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void adicionaMesa() {
@@ -645,6 +742,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 System.out.println("Mesa adicionada com sucesso!");
             }
         }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void removerMesa() {
@@ -669,9 +771,14 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 System.out.println("\nRemovida com sucesso!\n");
             }
         }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void alteraEleicao() throws ParseException {
+    public void alteraEleicao() {
         int opcao, k;
         String titulo_ele;
         Scanner sc=new Scanner (System.in);
@@ -710,19 +817,34 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
             case 4:
                 System.out.println("Insira a data de inicio(dd/mm/aaaa):\n");
                 data_inicio = sc.next();
-                Date data = sdf.parse(data_inicio);
+                Date data = null;
+                try {
+                    data = sdf.parse(data_inicio);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
                 Calendar calendar = Calendar.getInstance();
                 calendar.setTime(data);
                 break;
             case 5:
                 System.out.println("Insira a data de fim(dd/mm/aaaa):\n");
                 data_fim = sc.next();
-                Date data_f = sdf.parse(data_fim);
+                Date data_f = null;
+                try {
+                    data_f = sdf.parse(data_fim);
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
                 Calendar calendar_f = Calendar.getInstance();
                 calendar_f.setTime(data_f);
                 break;
             default:
                 break;
+        }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -746,7 +868,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         for(int i=0;i<ele.getMesasVoto().size();i++) {
             System.out.println("-"+ele.getMesasVoto().get(i).getDepartamento().getNome()+"("+ele.getMesasVoto().get(i).getEleitores().size()+" eleitores)");
         }
-
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     //se for b-branco, n-nulo,outro(confirmar se lista existe e se existir adicionar voto a lista)
@@ -779,6 +905,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 }
             }
         }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return flag;
     }
 
@@ -805,6 +936,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 voto=sc.next();
                 inserirVoto(cc,eleicoes.get(x).getTitulo(),voto);
             }
+        }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -833,6 +969,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
             //percentagem
         } else {//nao esta fechada
             System.out.println("A eleicao ainda nao encerrou");
+        }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -877,6 +1018,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                     eleicoes.get(i).setConclusao(1);
                 }
             }
+        }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -962,6 +1108,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
             }
             else{System.out.println("Nao existem mesas de voto encerradas!");}
         }
+        try {
+            save();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void listarEleicoes(){
@@ -971,14 +1122,14 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         }
     }
 
-    public boolean autenticacao(int username, String password){
+    public int autenticacao(int username, String password){
         int i;
         for(i=0;i<=users.size();i++){
             if(users.get(i).getCc() == username && users.get(i).getPassword()==password){
-                return true;
+                return 1;
             }
         }
-        return false;
+        return 2;
     }
 
     public void loadFiles() throws IOException{
@@ -1107,53 +1258,94 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         users.add(fun2);
     }
 
-    public void save() throws IOException {
-        file.abrirEscrita("users.dat");
-        try{
-            file.escreverObjeto(users);
-        }catch(IOException e) {
-            System.out.println("Ocorreu um erro do tipo "+e);
-        }
-        //System.out.println("Foi inserido");
-        file.fecharEscrita();
+    public void startRMIServer (){
 
-        file.abrirEscrita("listas.dat");
         try{
-            file.escreverObjeto(listas);
-        }catch(IOException e) {
-            System.out.println("Ocorreu um erro do tipo "+e);
+            this.reg_rmi = LocateRegistry.createRegistry(portRMI);
+            reg_rmi.rebind(name, this);
+        }catch (RemoteException re){
+            re.printStackTrace();
         }
-        file.fecharEscrita();
-
-        file.abrirEscrita("eleicoes.dat");
-        try{
-            file.escreverObjeto(eleicoes);
-        }catch(IOException e) {
-            System.out.println("Ocorreu um erro do tipo "+e);
-        }
-        file.fecharEscrita();
-
-        file.abrirEscrita("universidades.dat");
-        try{
-            file.escreverObjeto(universidades);
-        }catch(IOException e) {
-            System.out.println("Ocorreu um erro do tipo "+e);
-        }
-
-        file.fecharEscrita();
+        //Ligação UDP
+        UDPConnection pinger = new UDPConnection(portUDP_principal);
+        pinger.start();
     }
 
-
     public static void main(String args[]) throws InterruptedException, IOException, RemoteException {
-        /*System.getProperties().put("java.security.policy", "policy.all");
-        System.setSecurityManager(new RMISecurityManager());*/
+        ServerSocket listenSocket = null;
+        RMIServer rmi = new RMIServer();
+    }
 
-             try {
-                 primaryRMIServer(portRMI);
-             } catch (RemoteException e) {
-                 connectBackupRMI(portRMI);
-             } catch (ClassNotFoundException e) {
-                 e.printStackTrace();
-             }
+    public class UDPConnection extends Thread{
+        int portUDP;
+
+        public UDPConnection(int portUDP) {
+            this.portUDP = portUDP;
+        }
+
+        public void run(){
+            DatagramSocket aSocket = null;
+            String msg = "hi";
+            //Se for primário
+            if (this.portUDP == 7000) {
+                try {
+                    aSocket = new DatagramSocket();
+                    while (true) {
+                        byte[] mBuffer = msg.getBytes();
+                        InetAddress host = InetAddress.getByName("localhost");
+                        int serverPort = 7000;
+                        DatagramPacket request = new DatagramPacket(mBuffer, mBuffer.length, host, serverPort);
+                        Thread.sleep(1000);
+                        aSocket.send(request);
+                        System.out.println("SENDINGGGGGGGGGGGG!!! ");
+
+                    }
+                } catch (SocketException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    if (aSocket != null)
+                        aSocket.close();
+                }
+            }
+            //Se for servidor secundário
+            else if (this.portUDP == 6789) {
+                try {
+                    String s;
+                    aSocket = new DatagramSocket(7000);
+                    aSocket.setSoTimeout(1000);
+                    System.out.println("Socket datagram listening on port 7000");
+                    int i = 0;
+                    do {
+                        byte[] buffer = new byte[1024];
+
+                        DatagramPacket request = new DatagramPacket(buffer, buffer.length);
+                        s = new String(request.getData(), 0, request.getLength());
+                        System.out.println("Server Recebeu: " + s);
+                        try {
+                            aSocket.receive(request);
+                            i = 0;
+                        } catch (SocketTimeoutException ste) {
+                            i++;
+                            System.out.println("OIIIIII i:" + i);
+                        }
+                    } while (i < 5);
+
+                    RMIServer.this.startRMIServer();
+                    aSocket.close();
+                } catch (SocketException se) {
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    if (aSocket != null)
+                        aSocket.close();
+                }
+            }
+        }
+
     }
 }
