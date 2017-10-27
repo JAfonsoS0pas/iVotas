@@ -16,8 +16,8 @@ public class User implements Serializable{
     protected String morada;
 
     protected Data validadeCC;
-    
-    
+
+    public User(){}
     public User(int profissao, int cc, Data validadeCC, String password, Departamento dep, int telefone, String morada)
     {
         this.profissao=profissao;
@@ -37,8 +37,28 @@ public class User implements Serializable{
         return dep;
     }
 
+    public int getProfissao() {
+        return profissao;
+    }
+
+    public Data getValidadeCC() {
+        return validadeCC;
+    }
+
+    public void setProfissao(int profissao) {
+        this.profissao = profissao;
+    }
+
     public void setTipo(int profissao) {
         this.profissao = profissao;
+    }
+
+    public void setDep(Departamento dep) {
+        this.dep = dep;
+    }
+
+    public void setValidadeCC(Data validadeCC) {
+        this.validadeCC = validadeCC;
     }
 
     public String getPassword() {

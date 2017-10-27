@@ -15,8 +15,7 @@ public class Universidade {
     protected String nome;
     protected ArrayList <Departamento> departamentos;
     
-    public Universidade(String nome)
-    {
+    public Universidade(String nome) {
         this.nome=nome;
     }
 

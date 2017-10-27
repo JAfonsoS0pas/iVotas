@@ -15,7 +15,6 @@ public class Lista {
     protected String nome;
     protected int tipo;//1=estudantes, 2=docentes ou 3=funcionarios
     protected ArrayList<User> candidatos;
-    protected ArrayList<Eleicao>participacoes;
     protected int votos;
     
     
@@ -31,14 +30,6 @@ public class Lista {
 
     public void setTipo(int tipo) {
         this.tipo = tipo;
-    }
-
-    public ArrayList<Eleicao> getParticipacoes() {
-        return participacoes;
-    }
-
-    public void setParticipacoes(ArrayList<Eleicao> participacoes) {
-        this.participacoes = participacoes;
     }
 
     public int getVotos() {

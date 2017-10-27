@@ -12,13 +12,13 @@ import java.util.ArrayList;
  * @author anacj
  */
 public class MesaVoto {
-    
+    protected int id;
     protected Departamento departamento; //onde esta localizada
     protected ArrayList<User>eleitores;
     protected ArrayList<User>membros;//tem que ter 3 membros
     
-    public MesaVoto(Departamento departamento)
-    {
+    public MesaVoto(Departamento departamento, int id) {
+        this.id = id;
         this.departamento=departamento;
     }
     
@@ -30,6 +30,14 @@ public class MesaVoto {
 
     public void setDepartamento(Departamento departamento) {
         this.departamento = departamento;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public ArrayList<User> getEleitores() {

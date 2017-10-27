@@ -10,7 +10,8 @@ import java.util.Date;
  */
 public class Eleicao {
     
-    protected int tipo; //1=nucleo, 4=conselho geral, de 3=professores ou de 2=funcionarios
+    protected int tipo; //1=nucleo, 2=professores ou de 3=funcionarios,4=conselho geral,5=direçao faculdade, 6=direcao departamento
+    protected Universidade uni;//para o caso da eleicao para direçao de faculdade
     protected Departamento dep;//para o caso dos nucleos, saber se os candidatos pertencem aquele departamento
     protected Date dataInit;
     protected Date dataFim;
@@ -41,7 +42,16 @@ public class Eleicao {
         this.dataFim=dataFim;
         this.titulo=titulo;
         this.descricao=descricao;
-        
+    }
+
+
+    public Eleicao(Universidade uni, int tipo, Date dataInit, Date dataFim, String titulo, String descricao){
+        this.uni=uni;
+        this.tipo=tipo;
+        this.dataInit=dataInit;
+        this.dataFim=dataFim;
+        this.titulo=titulo;
+        this.descricao=descricao;
     }
 
     public int getConclusao() {
@@ -63,8 +73,14 @@ public class Eleicao {
     {
         listasCandidatas.add(lista);
     }
-   
 
+    public Universidade getUni() {
+        return uni;
+    }
+
+    public void setUni(Universidade uni) {
+        this.uni = uni;
+    }
 
     public ArrayList<Integer> getEleitores() {
         return eleitores;

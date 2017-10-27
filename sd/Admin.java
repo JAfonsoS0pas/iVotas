@@ -68,14 +68,10 @@ public class Admin {
                                 rmiServer.criarDep();
                                 break;
                             case 2:
-                                System.out.println("Nome do departamento a alterar: ");
-                                nomeDep = sc.next();
-                                rmiServer.alterarDep(nomeDep);
+                                rmiServer.alterarDep();
                                 break;
                             case 3:
-                                System.out.println("Nome do departamento a alterar: ");
-                                nomeDep = sc.next();
-                                rmiServer.removerDep(nomeDep);
+                                rmiServer.removerDep();
                                 break;
                             default:
                                 break;
@@ -127,7 +123,7 @@ public class Admin {
                     rmiServer.resultados();
                     break;
                 case 12:
-
+                    rmiServer.votoAntecipado();
                     break;
                 case 13:
                     rmiServer.alterarDadosPessoais();
