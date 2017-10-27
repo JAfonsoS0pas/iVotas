@@ -2,6 +2,7 @@
 package rmi;
 
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  *
@@ -14,11 +15,10 @@ public class User implements Serializable{
     protected Departamento dep;
     protected int telefone;
     protected String morada;
-
-    protected Data validadeCC;
+    protected Date validadeCC;
 
     public User(){}
-    public User(int profissao, int cc, Data validadeCC, String password, Departamento dep, int telefone, String morada)
+    public User(int profissao, int cc, Date validadeCC, String password, Departamento dep, int telefone, String morada)
     {
         this.profissao=profissao;
         this.cc=cc;
@@ -41,7 +41,7 @@ public class User implements Serializable{
         return profissao;
     }
 
-    public Data getValidadeCC() {
+    public Date getValidadeCC() {
         return validadeCC;
     }
 
@@ -57,7 +57,7 @@ public class User implements Serializable{
         this.dep = dep;
     }
 
-    public void setValidadeCC(Data validadeCC) {
+    public void setValidadeCC(Date validadeCC) {
         this.validadeCC = validadeCC;
     }
 

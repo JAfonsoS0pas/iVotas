@@ -32,6 +32,7 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
     public ArrayList<Eleicao> eleicoes;
     public ArrayList<Universidade> universidades;
     public ArrayList<User>users;//todas as pessoas
+    public ArrayList<Lista>listas; //Listas de candidatura
 
     public RMIServer() throws RemoteException {
         super();
@@ -121,7 +122,8 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
     }
 
     //Mudar data
-    public void registarPessoa() {
+    public void registarPessoa() throws ParseException {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
         int telefone, cc,profissao;
         String password, dep,morada;
         Scanner sc=new Scanner(System.in);
@@ -130,8 +132,8 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         System.out.println("Cartao de Cidadao: \n");
         cc=sc.nextInt();
         System.out.println("Validade do CC");
-        String [] validade=sc.next().split("/");
-        Data validadeCC=new Data(Integer.parseInt(validade[0]),Integer.parseInt(validade[1]),Integer.parseInt(validade[2]));
+        String validade=sc.next();
+        Date validadeCC = sdf.parse(validade);
         System.out.println("Password: \n");
         password=sc.next();
         System.out.println("Departamento: \n");
@@ -148,23 +150,21 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 users.add(user);
                 departamentos.get(i).pessoas.add(user);
             }
-
         }
-
     }
 
     //Função para listar todas as pessoas
     public void listarUsers() {
         for(int i=0;i<users.size();i++) {
             System.out.println("Nr do CC: "+users.get(i).getCc()+" Tipo de profissao: "+users.get(i).getProfissao()+" Pertence ao departamento de: "+users.get(i).getDep()+"\n");
-
         }
     }
 
-    public void alterarDadosPessoais() {
+    public void alterarDadosPessoais() throws ParseException{
         Scanner sc=new Scanner(System.in);
         User user=new User();
         int opcao,ccU;
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
         listarUsers();
         System.out.println("Quer alterar os dados de que usar?(insira o nr de cc)\n");
         ccU=sc.nextInt();
@@ -196,19 +196,18 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 user.cc=cc;
                 break;
             case 4:
+                String validade;
                 System.out.println("Validade do CC(dd/mm/aaaa):\n");
-                String [] validade=sc.next().split("/");
-                Data validadeCC=new Data(Integer.parseInt(validade[0]),Integer.parseInt(validade[1]),Integer.parseInt(validade[2]));
+                validade=sc.next();
+                Date validadeCC = sdf.parse(validade);
                 user.validadeCC=validadeCC;
                 break;
             case 5:
                 String dep;
                 System.out.println("Nome do departamento:\n");
                 dep=sc.next();
-                for(int i=0;i<departamentos.size();i++)
-                {
-                    if(departamentos.get(i).nome.equals(dep))
-                    {
+                for(int i=0;i<departamentos.size();i++) {
+                    if(departamentos.get(i).nome.equals(dep)) {
                         user.dep=departamentos.get(i);
                     }
                 }
@@ -228,7 +227,6 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
             default:
                 break;
         }
-
     }
 
     public void criarUni() {
@@ -237,8 +235,7 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         Scanner sc=new Scanner (System.in);
         nome=sc.next();
         Universidade uni=new Universidade(nome);
-        if(universidades.contains(uni))
-        {
+        if(universidades.contains(uni)) {
             System.out.println("Essa universidade ja existe!");
         }
         else{
@@ -252,13 +249,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         Scanner sc=new Scanner(System.in);
         uni=sc.next();
         Universidade univ=new Universidade(uni);
-        if(universidades.contains(univ))
-        {
+        if(universidades.contains(univ)) {
             System.out.println("Insira o nome do departamento:\n");
             dep=sc.next();
             Departamento depart=new Departamento(uni,dep);
-            if(univ.departamentos.contains(depart))
-            {
+            if(univ.departamentos.contains(depart)) {
                 System.out.println("Esse departamento ja existe!");
             }
             else{
@@ -275,7 +270,8 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         }
     }
 
-    public void alterarDep() {
+    public void alterarDep() throws ParseException{
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
         String nome,resposta;
         int respost;
         Scanner sc=new Scanner(System.in);
@@ -285,67 +281,52 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         System.out.println("Alterar Departamento\n-1)Alterar nome do departamento\n-2)Alterar pessoas de um departamento\n");
 
         respost=sc.nextInt();
-        if(respost==2)
-        {
+        if(respost==2) {
             int cc;
             System.out.println("Insira o numero do CC:\n");
             cc=sc.nextInt();
-            for(int i=0;i<departamentos.size();i++)
-            {
-                if(departamentos.get(i).getNome().equals(nome))
-                {
-                    for(int j=0;j<departamentos.get(i).getPessoas().size();j++)
-                    {
-                        if(departamentos.get(i).getPessoas().get(j).getCc()==cc)
-                        {
+            for(int i=0;i<departamentos.size();i++) {
+                if(departamentos.get(i).getNome().equals(nome)) {
+                    for(int j=0;j<departamentos.get(i).getPessoas().size();j++) {
+                        if(departamentos.get(i).getPessoas().get(j).getCc()==cc) {
                             System.out.println("Pretente alterar ou remover?\n");
                             resposta=sc.next();
-                            if("alterar".equals(resposta))
-                            {
+                            if("alterar".equals(resposta)) {
                                 System.out.println("Alterar:\n-profissao\n-password\n-CC\n-validadeCC\n-telefone\n-morada\n");
                                 resposta=sc.next();
-                                if(resposta.equals("profissao"))
-                                {
+                                if(resposta.equals("profissao")) {
                                     System.out.println("Insira a profissao: \n1)Estudante\n2)Docente\n3)Funcionario");
                                     respost=sc.nextInt();
                                     departamentos.get(i).getPessoas().get(j).setProfissao(respost);
                                 }
-                                else if(resposta.equals("password"))
-                                {
+                                else if(resposta.equals("password")) {
                                     System.out.println("Insira a nova password: \n");
                                     resposta=sc.next();
                                     departamentos.get(i).getPessoas().get(j).setPassword(resposta);
-
                                 }
-                                else if(resposta.equals("CC"))
-                                {
+                                else if(resposta.equals("CC")) {
                                     System.out.println("Insira o numero do CC: \n");
                                     respost=sc.nextInt();
                                     departamentos.get(i).getPessoas().get(j).setCc(respost);
                                 }
-                                else if(resposta.equals("validadeCC"))
-                                {
+                                else if(resposta.equals("validadeCC")) {
                                     System.out.println("Insira a validade do CC:(dd/mm/aaaa)\n");
-                                    String [] vali=sc.next().split("/");
-                                    Data valiNew=new Data(Integer.parseInt(vali[0]),Integer.parseInt(vali[1]),Integer.parseInt(vali[2]));
+                                    String vali=sc.next();
+                                    Date valiNew=sdf.parse(vali);
                                     departamentos.get(i).getPessoas().get(j).setValidadeCC(valiNew);
-
                                 }
-                                else if(resposta.equals("telefone"))
-                                {
+                                else if(resposta.equals("telefone")) {
                                     System.out.println("Insira o nº de telefone: \n");
                                     respost=sc.nextInt();
                                     departamentos.get(i).getPessoas().get(j).setTelefone(respost);
                                 }
-                                else if(resposta.equals("morada"))
-                                {
+                                else if(resposta.equals("morada")) {
                                     System.out.println("Insira a morada: \n");
                                     resposta=sc.next();
                                     departamentos.get(i).getPessoas().get(j).setMorada(resposta);
                                 }
                             }
-                            else if("remover".equals(resposta))
-                            {
+                            else if("remover".equals(resposta)) {
                                 departamentos.get(i).getPessoas().remove(departamentos.get(i).getPessoas().get(j));
                             }
                         }
@@ -353,14 +334,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 }
             }
         }
-        else if(respost==1)
-        {
+        else if(respost==1) {
             System.out.println("Insira o novo nome: \n");
             resposta=sc.next();
-            for(int i=0;i<departamentos.size();i++)
-            {
-                if(departamentos.get(i).getNome().equals(nome))
-                {
+            for(int i=0;i<departamentos.size();i++) {
+                if(departamentos.get(i).getNome().equals(nome)) {
                     departamentos.get(i).setNome(resposta);
                     System.out.println("Nome de departamento alterado!\n");
                 }
@@ -374,20 +352,14 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         listarDeps();
         System.out.println("Escolha o departamento:\n");
         nome=sc.next();
-        for(int i=0;i<departamentos.size();i++)
-        {
-            if(departamentos.get(i).getNome().equals(nome))
-            {
+        for(int i=0;i<departamentos.size();i++) {
+            if(departamentos.get(i).getNome().equals(nome)) {
                 departamentos.remove(departamentos.get(i));//elimina departamento do array departamentos
-                for(int j=0;j<universidades.size();j++)
-                {
-                    if(universidades.get(j).getDepartamentos().contains(departamentos.get(i)));
-                    {
+                for(int j=0;j<universidades.size();j++) {
+                    if(universidades.get(j).getDepartamentos().contains(departamentos.get(i)));{
                         universidades.get(j).getDepartamentos().remove(departamentos.get(i));//elimina departamento dentro do array departamentos da universidade
-
                     }
                 }
-
             }
         }
     }
@@ -396,10 +368,9 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         int tipo;
         String titulo, descricao,depart,univ;
         Scanner sc=new Scanner(System.in);
-        System.out.println("Tipo: ");
+        System.out.println("Tipo: (1)Nucleo (2)Docentes (2)Funcionarios (4)Conselho Geral (5)Direçao de uma Faculdade (6)Direção de um Departamento");
         tipo=sc.nextInt();
         String data_inicio, data_fim;
-
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy hh:mm");
 
         System.out.println("Data Inicio (dd-mm-yyyy hh:mm): ");
@@ -418,7 +389,6 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         titulo=sc.next();
         System.out.println("Descricao\n");
         descricao=sc.next();
-
         if(tipo==1) {
             System.out.println("Sendo eleicao de nucleos, insira o departamento:\n");
             depart = sc.next();
@@ -429,37 +399,27 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                     System.out.println("Eleição criada!");
                 }
             }
-        } else if(tipo==5)
-        {
+        } else if(tipo==5) {
             System.out.println("Sendo eleicao para a direção de uma faculdade, insira a faculdade:\n");
             univ=sc.next();
-            for(int i=0;i<universidades.size();i++)
-            {
-                if(universidades.get(i).getNome().equals(univ))
-                {
+            for(int i=0;i<universidades.size();i++) {
+                if(universidades.get(i).getNome().equals(univ)) {
                     Eleicao elec=new Eleicao(universidades.get(i),tipo,data,data_f,titulo,descricao);
                     eleicoes.add(elec);
                     System.out.println("Eleicao criada!\n");
                 }
-
             }
-
         }
-        else if(tipo==6)
-        {
+        else if(tipo==6) {
             System.out.println("Sendo eleicao para a direção de um departamento, insira o departamento:\n");
             depart=sc.next();
-            for(int i=0;i<departamentos.size();i++)
-            {
-                if(departamentos.get(i).getNome().equals(depart))
-                {
+            for(int i=0;i<departamentos.size();i++) {
+                if(departamentos.get(i).getNome().equals(depart)) {
                     Eleicao elec=new Eleicao(departamentos.get(i),tipo,data,data_f,titulo,descricao);
                     eleicoes.add(elec);
                     System.out.println("Eleicao criada!\n");
                 }
-
             }
-
         } else {
             Eleicao eleicao = new Eleicao(tipo, data, data_f, titulo, descricao);
             eleicoes.add(eleicao);
@@ -487,14 +447,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 Lista lista=new Lista(nomeLista,1);
                 System.out.println("Quantas pessoas terá a lista candidata? ");
                 pessoas=sc.nextInt();
-                for(int i=0;i<pessoas;i++)
-                {
+                for(int i=0;i<pessoas;i++) {
                     System.out.println("Insira o numero do CC:");
                     numCC=sc.nextInt();
-                    for(int j=0;j<users.size();j++)
-                    {
-                        if(users.get(j).getProfissao()==1 && users.get(j).getCc()==numCC && users.get(j).getDep()==ele.getDep())
-                        {
+                    for(int j=0;j<users.size();j++) {
+                        if(users.get(j).getProfissao()==1 && users.get(j).getCc()==numCC && users.get(j).getDep()==ele.getDep()) {
                             lista.getCandidatos().add(users.get(j));
                             System.out.println("Adicionado!");
                         }
@@ -507,14 +464,11 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 Lista listaDocente=new Lista(nomeLista,2);
                 System.out.println("Quantas pessoas terá a lista candidata? ");
                 pessoas=sc.nextInt();
-                for(int i=0;i<pessoas;i++)
-                {
+                for(int i=0;i<pessoas;i++) {
                     System.out.println("Insira o numero do CC:");
                     numCC=sc.nextInt();
-                    for(int j=0;j<users.size();j++)
-                    {
-                        if(users.get(j).getCc()==numCC && users.get(j).getProfissao()==2)
-                        {
+                    for(int j=0;j<users.size();j++) {
+                        if(users.get(j).getCc()==numCC && users.get(j).getProfissao()==2) {
                             listaDocente.getCandidatos().add(users.get(j));
                             System.out.println("Adicionado!");
                             break;
@@ -523,20 +477,16 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 }
                 ele.getListasCandidatas().add(listaDocente);
                 break;
-
-//eleicao de funcionarios
+            //eleicao de funcionarios
             case 3:
                 Lista listaFunc=new Lista(nomeLista,3);
                 System.out.println("Quantas pessoas terá a lista candidata? ");
                 pessoas=sc.nextInt();
-                for(int i=0;i<pessoas;i++)
-                {
+                for(int i=0;i<pessoas;i++) {
                     System.out.println("Insira o numero do CC:");
                     numCC=sc.nextInt();
-                    for(int j=0;j<users.size();j++)
-                    {
-                        if(users.get(j).getCc()==numCC && users.get(j).getProfissao()==3)
-                        {
+                    for(int j=0;j<users.size();j++) {
+                        if(users.get(j).getCc()==numCC && users.get(j).getProfissao()==3) {
                             listaFunc.getCandidatos().add(users.get(j));
                             System.out.println("Adicionado!");
                         }
@@ -544,23 +494,18 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 }
                 ele.getListasCandidatas().add(listaFunc);
                 break;
-
-//CONSELHO GERAL listas de 3 tipos
+            //CONSELHO GERAL listas de 3 tipos
             case 4:
-
                 System.out.println("\nLista de 1=estudantes, 2=funcionarios ou 3=docentes?\n-");//
                 tipoLista=sc.nextInt();
                 Lista listaConselho=new Lista(nomeLista,tipoLista);
                 System.out.println("Quantas pessoas terá a lista candidata? ");
                 pessoas=sc.nextInt();
-                for(int i=0;i<pessoas;i++)
-                {
+                for(int i=0;i<pessoas;i++) {
                     System.out.println("Insira o numero do CC:");
                     numCC=sc.nextInt();
-                    for(int j=0;j<users.size();j++)
-                    {
-                        if(users.get(j).getCc()==numCC && users.get(j).getProfissao()==tipoLista)
-                        {
+                    for(int j=0;j<users.size();j++) {
+                        if(users.get(j).getCc()==numCC && users.get(j).getProfissao()==tipoLista) {
                             listaConselho.getCandidatos().add(users.get(j));
                             System.out.println("Adicionado");
                         }
@@ -568,24 +513,18 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 }
                 ele.getListasCandidatas().add(listaConselho);
                 break;
-
             //direçao de faculdade
             case 5:
                 Lista listaFac=new Lista(nomeLista,2);
                 System.out.println("Quantas pessoas terá a lista candidata? ");
                 pessoas=sc.nextInt();
-                for(int i=0;i<pessoas;i++)
-                {
+                for(int i=0;i<pessoas;i++) {
                     System.out.println("Insira o numero do CC:");
                     numCC=sc.nextInt();
-                    for(int j=0;j<users.size();j++)
-                    {
-                        for(int h=0;k<universidades.size();k++)
-                        {
-                            if(universidades.get(h).getDepartamentos().contains(users.get(j).getDep()))
-                            {
-                                if(users.get(j).getCc()==numCC && users.get(j).getProfissao()==2)
-                                {
+                    for(int j=0;j<users.size();j++) {
+                        for(int h=0;k<universidades.size();k++) {
+                            if(universidades.get(h).getDepartamentos().contains(users.get(j).getDep())) {
+                                if(users.get(j).getCc()==numCC && users.get(j).getProfissao()==2) {
                                     listaFac.getCandidatos().add(users.get(j));
                                     System.out.println("Adicionado");
                                 }
@@ -595,48 +534,63 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 }
                 ele.listasCandidatas.add(listaFac);
                 break;
-
             //direçao de departamento
             case 6:
                 Lista listaDep=new Lista(nomeLista,2);
                 System.out.println("Quantas pessoas terá a lista candidata? ");
                 pessoas=sc.nextInt();
-                for(int i=0;i<pessoas;i++)
-                {
+                for(int i=0;i<pessoas;i++) {
                     System.out.println("Insira o numero do CC:");
                     numCC=sc.nextInt();
-                    for(int j=0;j<users.size();j++)
-                    {
-                        if(users.get(j).getCc()==numCC && users.get(j).getProfissao()==2 && users.get(j).getDep()==ele.dep)
-                        {
+                    for(int j=0;j<users.size();j++) {
+                        if(users.get(j).getCc()==numCC && users.get(j).getProfissao()==2 && users.get(j).getDep()==ele.dep) {
                             listaDep.getCandidatos().add(users.get(j));
                             System.out.println("Adicionado");
                         }
                     }
                 }
-
                 ele.getListasCandidatas().add(listaDep);
                 break;
-
             default:
                 break;
         }
     }
 
     //Função para listar todas as mesas de voto
-    public void listarMesas() {
+    public ArrayList listarMesas() {
+        ArrayList<MesaVoto> aux=null;
         for(int i=0;i<eleicoes.size();i++) {
             System.out.println("Eleicao");
-
+            for(int j=0;j<eleicoes.get(i).getMesasVoto().size();j++) {
+                if(aux.contains(eleicoes.get(i).getMesasVoto().get(j))) {
+                    System.out.println("Ja contem essa mesa!");
+                }
+                else{
+                    aux.add(eleicoes.get(i).getMesasVoto().get(j));
+                }
+            }
         }
+        for(int z=0;z<aux.size();z++) {
+            System.out.println("ID: "+aux.get(z).getId());
+        }
+        return aux;
     }
 
-    public void gerirMembrosMesa(MesaVoto mesa) {
-        int membros=mesa.getMembros().size();
-        int opcao, cc;
-        System.out.println("Pretende: 1)Adicionar membros a mesa\n2)Remover membros\n");
+    public void gerirMembrosMesa() {
+        MesaVoto mesa=new MesaVoto();
+        int opcao, cc,id;
         Scanner sc=new Scanner(System.in);
+        ArrayList<MesaVoto> mesas=listarMesas();
+        System.out.println("Quer gerir memmbros de que mesa?(insira o ID");
+        id=sc.nextInt();
+        for(int m=0;m<mesas.size();m++) {
+            if(mesas.get(m).getId()==id) {
+                mesa=mesas.get(m);
+            }
+        }
+        System.out.println("Pretende: 1)Adicionar membros a mesa\n2)Remover membros");
         opcao=sc.nextInt();
+        int membros=mesa.getMembros().size();
         if(opcao==1) {
             if(membros<3) {
                 System.out.println("Insira o numero do CC do membro que quer inserir");
@@ -651,14 +605,14 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
             } else if(membros==3){
                 System.out.println("Nao pode inserir! ja existem 3 membros");
             }
-        } else if(opcao==2) {
+        }
+        else if(opcao==2) {
             System.out.println("Insira o cc do membro que quer remover:\n");
             cc=sc.nextInt();
             for(int j=0;j<mesa.getMembros().size();j++) {
                 if(mesa.getMembros().get(j).getCc()==cc) {
                     mesa.getMembros().remove(mesa.getMembros().get(j));
                     System.out.println("Membro removido!\n");
-                    break;
                 }
             }
         }
@@ -681,10 +635,8 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
 
         System.out.println("Quer inserir uma mesa de voto em que Departamento?\n-");
         name=sc.next();
-        for(int i=0;i<departamentos.size();i++)
-        {
-            if(departamentos.get(i).getNome().equals(name))//se encontrar o departamento
-            {
+        for(int i=0;i<departamentos.size();i++) {
+            if(departamentos.get(i).getNome().equals(name)){//se encontrar o departamento
                 int id;
                 System.out.println("Insira o id da mesa:\n");
                 id=sc.nextInt();
@@ -711,10 +663,8 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         }
         System.out.println("Quer remover mesa de voto de que Departamento?\n-");
         name=sc.next();
-        for(int i=0;i<ele.getMesasVoto().size();i++)
-        {
-            if(ele.getMesasVoto().get(i).getDepartamento().getNome().equals(name))
-            {
+        for(int i=0;i<ele.getMesasVoto().size();i++) {
+            if(ele.getMesasVoto().get(i).getDepartamento().getNome().equals(name)) {
                 ele.getMesasVoto().remove(ele.getMesasVoto().get(i));
                 System.out.println("\nRemovida com sucesso!\n");
             }
@@ -793,8 +743,7 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         //confirmar se ainda esta a decorrer a eleicao?
 
         System.out.println("Mesas de Voto - Nr de eleitores que exerceram o voto\n");
-        for(int i=0;i<ele.getMesasVoto().size();i++)
-        {
+        for(int i=0;i<ele.getMesasVoto().size();i++) {
             System.out.println("-"+ele.getMesasVoto().get(i).getDepartamento().getNome()+"("+ele.getMesasVoto().get(i).getEleitores().size()+" eleitores)");
         }
 
@@ -804,29 +753,21 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
     public boolean inserirVoto(int cc, String nomeElec,String voto){
         boolean flag=false;
         for(int i=0;i<eleicoes.size();i++){
-            if(eleicoes.get(i).getTitulo().equals(nomeElec))
-            {
-                if("b".equals(voto))
-                {
+            if(eleicoes.get(i).getTitulo().equals(nomeElec)) {
+                if("b".equals(voto)) {
                     eleicoes.get(i).votosBranco++;
                 }
-                else if("n".equals(voto) || voto==null)
-                {
+                else if("n".equals(voto) || voto==null) {
                     eleicoes.get(i).votosNulo++;
                 }
                 else{
-                    for(int j=0;j<eleicoes.get(i).listasCandidatas.size();j++)
-                    {
-                        if(eleicoes.get(i).listasCandidatas.get(j).nome.equals(voto))//lista existe bora votaaaaar!!!
-                        {
-                            for(int k=0;k<users.size();k++)
-                            {
-                                if(users.get(k).getCc()==cc && users.get(k).getTipo()==eleicoes.get(i).getListasCandidatas().get(j).getTipo())
-                                {
+                    for(int j=0;j<eleicoes.get(i).listasCandidatas.size();j++) {
+                        if(eleicoes.get(i).listasCandidatas.get(j).nome.equals(voto)){ //lista existe bora votaaaaar!!
+                            for(int k=0;k<users.size();k++) {
+                                if(users.get(k).getCc()==cc && users.get(k).getTipo()==eleicoes.get(i).getListasCandidatas().get(j).getTipo()) {
                                     eleicoes.get(i).listasCandidatas.get(j).votos++;
                                     eleicoes.get(i).eleitores.add(cc);
                                     flag=true;
-
                                 }
                             }
 
@@ -834,9 +775,7 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                         else{//lista nao exites logo o voto é nulo!!
                             eleicoes.get(i).votosNulo++;
                         }
-
                     }
-
                 }
             }
         }
@@ -850,32 +789,23 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         System.out.println("Insira o seu CC:\n");
         cc=sc.nextInt();
         System.out.println("Em que eleicao quer votar?\n");
-        for(int i=0;i<users.size();i++)
-        {
-            if(users.get(i).getCc()==cc)//user existe
-            {
-                for(int j=0;j<eleicoes.size();j++)
-                {
-                    if(eleicoes.get(j).getTipo()==users.get(i).getTipo())//pode votar nesta eleicao
-                    {
+        for(int i=0;i<users.size();i++) {
+            if(users.get(i).getCc()==cc){//user existe
+                for(int j=0;j<eleicoes.size();j++) {
+                    if(eleicoes.get(j).getTipo()==users.get(i).getTipo()){//pode votar nesta eleicao
                         System.out.println("-"+eleicoes.get(j).getTitulo()+"\n");
-
                     }
                 }
-
             }
         }
         opcao=sc.next();
-        for(int x=0;x<eleicoes.size();x++)
-        {
-            if(eleicoes.get(x).getTitulo().equals(opcao))
-            {
+        for(int x=0;x<eleicoes.size();x++) {
+            if(eleicoes.get(x).getTitulo().equals(opcao)) {
                 System.out.println("Insira o seu voto:\n");
                 voto=sc.next();
                 inserirVoto(cc,eleicoes.get(x).getTitulo(),voto);
             }
         }
-
     }
 
     public void resultados() {
@@ -891,11 +821,9 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
                 elec = eleicoes.get(k);
             }
         }
-        if(elec.getConclusao()==1)//ja terminou ja pode ser consultada
-        {
+        if(elec.getConclusao()==1){//ja terminou ja pode ser consultada
             int totalVotos=elec.eleitores.size();
-            for(int i=0;i<elec.listasCandidatas.size();i++)
-            {
+            for(int i=0;i<elec.listasCandidatas.size();i++) {
                 System.out.println("A lista "+elec.listasCandidatas.get(i).nome+" obteve "+elec.listasCandidatas.get(i).votos);//absoluto
                 System.out.println(" - Percentagem: "+(elec.listasCandidatas.get(i).votos*100)/totalVotos);
                 //percentagem
@@ -903,12 +831,8 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
             System.out.println("\nNumero de votos em branco: "+elec.votosBranco);//absoluto
             System.out.println(" - Percentagem de votos em branco:" +(elec.votosBranco*100)/totalVotos);
             //percentagem
-
-        }
-        else//nao esta fechada
-        {
+        } else {//nao esta fechada
             System.out.println("A eleicao ainda nao encerrou");
-
         }
     }
 
@@ -991,6 +915,55 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         return aux;
     }
 
+    public void estadoMesas() {
+        Scanner sc=new Scanner(System.in);
+        int opcao,a;
+        ArrayList<MesaVoto>aux1=null;//abertas
+        ArrayList<MesaVoto>aux2=null;
+        for(int i=0;i<eleicoes.size();i++){
+            if(eleicoes.get(i).getConclusao()==0){
+                for(int j=0;j<eleicoes.get(i).getMesasVoto().size();j++){
+                    if(aux1.contains(eleicoes.get(i).getMesasVoto().get(j))){
+                        System.out.println("Mesa ja foi inserida!");
+                    }
+                    else{
+                        aux1.add(eleicoes.get(i).getMesasVoto().get(j));
+                    }
+                }
+            }
+            else{
+                for(int x=0;x<eleicoes.get(i).getMesasVoto().size();x++){
+                    if(aux1.contains(eleicoes.get(i).getMesasVoto().get(x))){
+                        System.out.println("A eleicao esta encerrada mas esta mesa esta aberta noutra eleicao!");
+                    }
+                    else{
+                        aux2.add(eleicoes.get(i).getMesasVoto().get(x));
+                    }
+                }
+            }
+        }
+        System.out.println("Pretende ver as mesas de voto: 1)Ativas \n2)Encerradas");
+        opcao=sc.nextInt();
+        if(opcao==1){
+            if(aux1!=null){
+                System.out.println("Mesas de Voto Ativas");
+                for(a=0;a<aux1.size();a++){
+                    System.out.println(" - Mesa "+aux1.get(a).getId());
+                }
+            }
+            else{System.out.println("Nao existem mesas de voto ativas!");}
+        }
+        else if(opcao==2){
+            if(aux2!=null){
+                System.out.println("Mesas de Voto Encerradas");
+                for(a=0;a<aux2.size();a++){
+                    System.out.println(" - Mesa "+aux2.get(a).getId());
+                }
+            }
+            else{System.out.println("Nao existem mesas de voto encerradas!");}
+        }
+    }
+
     public void listarEleicoes(){
         int i;
         for(i=0;i<eleicoes.size();i++){
@@ -1008,6 +981,167 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
         return false;
     }
 
+    public void loadFiles() throws IOException{
+        //loads users
+        file.abrirLeitura("users.dat");{ //atualiza o array de users
+            try{
+                users=(ArrayList)file.lerObjeto();
+            }catch(ClassNotFoundException e)
+            {
+                System.out.println("Ocorreu um erro do tipo "+e);
+            }
+            file.fecharLeitura();
+        }
+
+        //loads Listas
+        file.abrirLeitura("listas.dat");{ //atualiza o array de listas candidatas
+            try{
+                listas=(ArrayList)file.lerObjeto();
+            }catch(ClassNotFoundException e)
+            {
+                System.out.println("Ocorreu um erro do tipo "+e);
+            }
+            file.fecharLeitura();
+        }
+
+        //loads Eleições
+        file.abrirLeitura("eleicoes.dat");{ //atualiza o array de eleicoes
+            try{
+                eleicoes=(ArrayList)file.lerObjeto();
+            }catch(ClassNotFoundException e) {
+                System.out.println("Ocorreu um erro do tipo "+e);
+            }
+            file.fecharLeitura();
+        }
+
+        //loads Univ
+        file.abrirLeitura("universidades.dat");{ //atualiza o array de universidades
+            try{
+                universidades=(ArrayList)file.lerObjeto();
+            }catch(ClassNotFoundException e) {
+                System.out.println("Ocorreu um erro do tipo "+e);
+            }
+            file.fecharLeitura();
+        }
+    }
+
+    public void createObject() throws ParseException {
+        String val_1="12/03/2019";
+        String val_2="11/02/2018";
+        String val_3="10/01/2018";
+        String val_4="08/06/2020";
+        String val_5="07/02/2018";
+        String val_6="06/02/2020";
+        String val_7="04/09/2018";
+        String val_8="05/05/2019";
+        String val_9="09/09/2023";
+        String val_10="08/12/2022";
+        String val_11="10/10/2024";
+        String val_12="24/05/2024";
+        String val_13="07/08/2023";
+        String val_14="13/10/2022";
+        String val_15="18/04/2025";
+        String val_16="30/06/2013";
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        Universidade uni1=new Universidade("Coimbra");
+        Universidade uni2=new Universidade("Aveiro");
+        Departamento dep1=new Departamento("Coimbra", "Engenharia Informatica");
+        Departamento dep2=new Departamento("Coimbra","Fisica");
+        Departamento dep3=new Departamento("Coimbra","Quimica");
+        Date d_1 = sdf.parse(val_1);
+        Date d_2 = sdf.parse(val_2);
+        Date d_3 = sdf.parse(val_3);
+        Date d_4 = sdf.parse(val_4);
+        Date d_5 = sdf.parse(val_5);
+        Date d_6 = sdf.parse(val_6);
+        Date d_7 = sdf.parse(val_7);
+        Date d_8 = sdf.parse(val_8);
+        Date d_9 = sdf.parse(val_9);
+        Date d_10 = sdf.parse(val_10);
+        Date d_11 = sdf.parse(val_11);
+        Date d_12 = sdf.parse(val_12);
+        Date d_13 = sdf.parse(val_13);
+        Date d_14 = sdf.parse(val_14);
+        Date d_15 = sdf.parse(val_15);
+        Date d_16 = sdf.parse(val_16);
+        uni1.departamentos.add(dep1);
+        uni1.departamentos.add(dep2);
+        uni1.departamentos.add(dep3);
+
+        User est1=new User(1,12345,d_1,"estudante1",dep2,912345345,"Rua a");
+        User est2=new User(1,54321,d_2,"estudante2",dep2,961231234,"Rua b");
+        User est3=new User(1,67899,d_3,"estudante3",dep2,913877281,"Rua c");
+        User est4=new User(1,11122,d_4,"estudante4",dep3,965872111,"Rua d");
+        User est5=new User(1,33444,d_5,"estudante5",dep3,938722444,"Rua e");
+        User est6=new User(1,55444,d_6,"estudante6",dep1,913456789,"Rua f");
+        User est7=new User(1,32432,d_7,"estudante7",dep1,912675834,"Rua g");
+        User est8=new User(1,12543,d_8,"estudante8",dep1,967231123,"Rua x");
+
+        User doc1=new User(2,55555,d_9,"docente1",dep1,913422277,"Rua h");
+        User doc2=new User(2,66666,d_10,"docente2",dep1,963123432,"Rua i");
+        User doc3=new User(2,77777,d_11,"docente3",dep2,912000656,"Rua j");
+        User doc4=new User(2,88888,d_12,"docente4",dep2,913244113,"Rua k");
+        User doc5=new User(2,99999,d_13,"docente5",dep3,967742592,"Rua l");
+        User doc6=new User(2,11111,d_14,"docente6",dep3,935288222,"Rua m");
+
+        User fun1=new User(3,33344,d_15,"funcionario1",dep1,965235656,"Rua n");
+        User fun2=new User(3,44433,d_16,"funcionario2",dep2,913422345,"Rua o");
+
+        universidades.add(uni1);
+        universidades.add(uni2);
+        users.add(est1);
+        users.add(est2);
+        users.add(est3);
+        users.add(est4);
+        users.add(est5);
+        users.add(est6);
+        users.add(est7);
+        users.add(est8);
+        users.add(doc1);
+        users.add(doc2);
+        users.add(doc3);
+        users.add(doc4);
+        users.add(doc5);
+        users.add(doc6);
+        users.add(fun1);
+        users.add(fun2);
+    }
+
+    public void save() throws IOException {
+        file.abrirEscrita("users.dat");
+        try{
+            file.escreverObjeto(users);
+        }catch(IOException e) {
+            System.out.println("Ocorreu um erro do tipo "+e);
+        }
+        //System.out.println("Foi inserido");
+        file.fecharEscrita();
+
+        file.abrirEscrita("listas.dat");
+        try{
+            file.escreverObjeto(listas);
+        }catch(IOException e) {
+            System.out.println("Ocorreu um erro do tipo "+e);
+        }
+        file.fecharEscrita();
+
+        file.abrirEscrita("eleicoes.dat");
+        try{
+            file.escreverObjeto(eleicoes);
+        }catch(IOException e) {
+            System.out.println("Ocorreu um erro do tipo "+e);
+        }
+        file.fecharEscrita();
+
+        file.abrirEscrita("universidades.dat");
+        try{
+            file.escreverObjeto(universidades);
+        }catch(IOException e) {
+            System.out.println("Ocorreu um erro do tipo "+e);
+        }
+
+        file.fecharEscrita();
+    }
 
 
     public static void main(String args[]) throws InterruptedException, IOException, RemoteException {
@@ -1021,8 +1155,5 @@ public class RMIServer extends UnicastRemoteObject implements RMI {
              } catch (ClassNotFoundException e) {
                  e.printStackTrace();
              }
-
-
     }
-
 }

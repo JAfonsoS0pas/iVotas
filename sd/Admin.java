@@ -46,7 +46,6 @@ public class Admin {
             System.out.println("12 - Voto antecipado");
             System.out.println("13 - Alterar dados pessoais");
             System.out.println("14 - Gerir membros de cada mesa de voto");
-            System.out.println("15 - Eleições para direção de departamento e de faculdade");
             System.out.printf("Introduza a opção: ");
             opc = sc.nextInt();
             switch (opc) {
@@ -111,7 +110,7 @@ public class Admin {
 
                     break;
                 case 8:
-
+                    rmiServer.estadoMesas();
                     break;
                 case 9:
                     rmiServer.eleitoresReal();
@@ -130,9 +129,6 @@ public class Admin {
                     break;
                 case 14:
                     rmiServer.gerirMembrosMesa();
-                    break;
-                case 15:
-
                     break;
                 default:
                     break;

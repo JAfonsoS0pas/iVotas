@@ -16,7 +16,8 @@ public class MesaVoto {
     protected Departamento departamento; //onde esta localizada
     protected ArrayList<User>eleitores;
     protected ArrayList<User>membros;//tem que ter 3 membros
-    
+
+    public MesaVoto(){}
     public MesaVoto(Departamento departamento, int id) {
         this.id = id;
         this.departamento=departamento;
