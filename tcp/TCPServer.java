@@ -1,3 +1,6 @@
+package tcp;
+
+import rmi.*;
 import java.net.*;
 import java.io.*;
 import java.rmi.NotBoundException;
@@ -10,19 +13,17 @@ class TCPServer{
     private static int serverPort = 6000;
     private static int rmiPort = 1099;
     private static String rmiName = "rmi";
+    private static RMI rmiServer = null;
     int id;
 
 
 
     public static void main(String args[]){
         int number=0; //numero de clientes ligados a este servidor
-        User users=new User();
-        id=getMesaID();
+        TCPUser users=null;
 
         try{
-            /*RMI rmiServer = (RMI) LocateRegistry.getRegistry(rmiPort).lookup(rmiName);*/
-            id=getIDMesa();
-            this.rmiPort=rmiPort+id
+            rmiServer = (RMI) LocateRegistry.getRegistry(rmiPort).lookup(rmiName);
             System.out.println("A escura no porto"+serverPort);
             ServerSocket listenSocket = new ServerSocket(serverPort);
             new Manager(users);
@@ -37,20 +38,17 @@ class TCPServer{
         }
         catch(IOException e) {
             System.out.println("Listen:" + e.getMessage());
-        }catch (SocketTimeoutException e) {
-        catch(NotBoundException e) { //execao para rmi
+        }catch(NotBoundException e) { //execao para rmi
             System.out.println("RMI:" + e.getMessage());
         }
     }
 
-
-}
-class Manager extends Thread{
-    User users;
+static class Manager extends Thread{
+    TCPUser users;
     Scanner input = new Scanner(System.in);
 
-    public Manager(User users){
-        this.users=users;
+    public Manager(TCPUser users){
+        users=users;
         this.start();
     }
 
@@ -62,28 +60,28 @@ class Manager extends Thread{
             //identifica o votante
             System.out.print("ID do votante: ");
             id=input.nextInt();
-            verificaEleitor(id);
+            rmiServer.verificaEleitor(id);
             //liberta mesa de voto
             System.out.print("Terminal a desbloquear:");
             numeroTerminal=input.nextInt();
-            users.userList.get(numeroTerminal).setId(id);
+            users.getUserList().get(numeroTerminal).setId(id);
             users.userList.get(numeroTerminal).permitonChange();
             System.out.println("=======>Terminal " + numeroTerminal + " desbloqueado!");
         }
     }
 }
 
-class Connection extends Thread {
+static class Connection extends Thread {
     BufferedReader in;
     PrintWriter out;
     Socket clientSocket;
     int thread_number;
     RMI server;
-    User users;
+    TCPUser users;
 
-    public Connection(Socket aClientSocket, int numero, RMI server, User users) {
+    public Connection(Socket aClientSocket, int numero, RMI server, TCPUser users) {
         this.server = server;
-        this.users = users;
+        users = users;
         thread_number = numero;
         try {
             clientSocket = aClientSocket;
@@ -96,23 +94,35 @@ class Connection extends Thread {
         }
     }
 
-    public void run(){
+    public void run() {
         String data;
-        int i;
-        int cc=0;
-        Info no=null;
-        String resposta=null;
-        String listas=null;
-        arrayList<Eleitor> aux;
+        int i, j, aux2 = 0;
+        int cc = 0;
+        Info no = null;
+        String resposta = null;
+        String listas = null;
+        ArrayList<Eleicao> aux;
 
-        for(Info node : users.userList){
-            if(node.userSocket==clientSocket){
-                no=node;
+        for (Info node : users.getUserList()) {
+            if (node.userSocket == clientSocket) {
+                no = node;
                 System.out.println("Client found!");
             }
         }
-        try{
+        try {
             data = in.readLine();
+<<<<<<< HEAD
+            String dataParts[];
+            dataParts = data.split(" ");
+            if (no.getPermition()) {
+                if (dataParts[0] == "login") {
+                    if (rmiServer.autenticacao(Integer.parseInt(dataParts[1]), dataParts[2]) == true) {
+                        resposta = "autenticacao correcta";
+                        cc = Integer.parseInt(dataParts[1]);
+                        aux = rmiServer.verificaEleitor(Integer.parseInt(dataParts[1]));
+                        for (i = 0; i < aux.size(); i++) {
+                            aux2 += aux.get(i).getListasCandidatas().size();
+=======
             if(no.getPermition()){
                 String dataParts [];
                 dataParts=data.split(" ");
@@ -124,14 +134,18 @@ class Connection extends Thread {
                         listas="type|item_list;item_count|"+aux.getListasCandidatas().size()+";";
                         for(i=0;i<aux.getListasCandidatas().size();i++){
                             listas+="item_"+i+"_name"+aux.getListasCandidatas().get(i).getNome();
+>>>>>>> 27e50ea56c830538fdd58232ef93489720fce425
                         }
-                        out.println(resposta);
-                    }
-                    else{
-                        resposta="Username ou Password erradas";
-                        out.println(resposta);
-                    }
+                        listas = "type|item_list;item_count|" + aux2 + ";";
 
+<<<<<<< HEAD
+                        for (i = 0; i < aux.size(); i++) {
+                            for (j = 0; i < aux.get(i).getListasCandidatas().size(); j++) {
+                                int count = i + j;
+                                listas += "item_" + count + "_name" + aux.get(i).getListasCandidatas().get(j).getNome() + ";";
+                            }
+                        }
+=======
                 }
                 else if(dataParts[0]=="vote"){
                     if(dataParts.size()==3){
@@ -139,22 +153,41 @@ class Connection extends Thread {
                     }
                     else if(dataParts.size()==2){
                         rmi.inserirVotos(cc,dataParts[1],null);
+>>>>>>> 27e50ea56c830538fdd58232ef93489720fce425
                     }
+                    out.println(resposta);
+                } else {
+                    resposta = "Username ou Password erradas";
+                    out.println(resposta);
                 }
-                else{
-                    out.println("Operacao inexistente");
+            } else if (dataParts[0] == "vote") {
+                if (dataParts.length == 3) {
+                    rmiServer.inserirVotos(cc, dataParts[1], dataParts[2]);
+                } else if (dataParts.length == 2) {
+                    rmiServer.inserirVotos(cc, dataParts[1], null);
                 }
+            } else {
+                out.println("Operacao inexistente");
             }
-        } catch(SocketTimeoutException e){
-            no=null;
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (IOException e1) {
+            e1.printStackTrace();
+        } catch (SocketTimeoutException e) {
+            no = null;
         }
+
     }
 }
 
-class User{
-    protected List<Info> userList = new ArrayList<Info>();
+class TCPUser{
+    protected ArrayList<Info> userList = new ArrayList<Info>();
+
+    public TCPUser(ArrayList<Info> userList) {
+        this.userList = userList;
+    }
+
+    public ArrayList<Info> getUserList() {
+        return userList;
+    }
 
     public void addUser(Socket socket){
 
